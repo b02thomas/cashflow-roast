@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useMotionValue, useTransform, animate, useInView } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string }) {
   const ref = useRef(null);
@@ -25,8 +25,26 @@ function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string
   );
 }
 
+type TextStat = {
+  icon: ReactNode;
+  value: string;
+  label: string;
+  description: string;
+  isText: true;
+};
+
+type NumericStat = {
+  icon: ReactNode;
+  value: number;
+  label: string;
+  description: string;
+  isText: false;
+};
+
+type Stat = TextStat | NumericStat;
+
 export function StatsRow() {
-  const stats = [
+  const stats: Stat[] = [
     {
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,7 +133,7 @@ export function StatsRow() {
                 </div>
               ) : (
                 <div className="mb-2">
-                  <AnimatedNumber value={stat.value as number} suffix={stat.label} />
+                  <AnimatedNumber value={stat.value} suffix={stat.label} />
                 </div>
               )}
               <p className="text-sm text-[var(--foreground)]/60">{stat.description}</p>
