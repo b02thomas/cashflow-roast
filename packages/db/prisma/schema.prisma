@@ -1,0 +1,91 @@
+// schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Profile {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  // MODE: The Fork - determines which features/dashboard user sees
+  appMode String @default("business") // "business" | "personal" | "both"
+
+  // BUSINESS MODE fields
+  businessName       String?
+  targetHourlyRate   Decimal  @default(50.00) // Critical for "The Roast"
+  currency           String   @default("USD")
+  logoUrl            String? // Supabase Storage URL
+  brandColor         String   @default("#00ADB5") // Hex color for invoices
+  businessType       String   @default("services") // "services" | "products" | "both"
+  monthlyRevenueGoal Decimal? // Business freedom number
+
+  // PERSONAL MODE fields
+  monthlySalary      Decimal? // Primary income (net)
+  monthlySavingsGoal Decimal? // Savings target
+
+  // SHARED
+  onboardingComplete Boolean @default(false)
+
+  clients  Client[]
+  invoices Invoice[]
+}
+
+model Client {
+  id      String  @id @default(uuid())
+  name    String
+  email   String
+  company String?
+  vatId   String?
+
+  userId   String
+  user     Profile   @relation(fields: [userId], references: [id])
+  invoices Invoice[]
+}
+
+model Invoice {
+  id            String   @id @default(uuid())
+  invoiceNumber String
+  status        String   @default("DRAFT") // DRAFT, SENT, PAID, OVERDUE
+
+  // Financials
+  subtotal    Decimal
+  taxAmount   Decimal
+  totalAmount Decimal
+
+  // The Roast Metrics
+  hoursSpent    Decimal  // User inputs this manually or via timer
+  effectiveRate Decimal? // Calculated: totalAmount / hoursSpent
+  roastFeedback String?  // The AI's critique saved for history
+
+  // Storage
+  pdfUrl String?
+
+  // Dates
+  issuedAt DateTime  @default(now())
+  dueAt    DateTime
+  paidAt   DateTime?
+
+  // Relations
+  clientId String
+  client   Client        @relation(fields: [clientId], references: [id])
+  userId   String
+  user     Profile       @relation(fields: [userId], references: [id])
+  items    InvoiceItem[]
+}
+
+model InvoiceItem {
+  id          String  @id @default(uuid())
+  description String
+  quantity    Decimal
+  unitPrice   Decimal
+  total       Decimal
+
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id])
+}
