@@ -1,7 +1,7 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
-import { User, Session } from "@supabase/supabase-js";
+import { createContext, useContext, useEffect, useState, useRef } from "react";
+import { User, Session, SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "./supabase";
 
 type AuthContextType = {
@@ -22,10 +22,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const supabaseRef = useRef<SupabaseClient | null>(null);
 
-  const supabase = createSupabaseBrowserClient();
+  // Initialize client only on mount (client-side)
+  if (typeof window !== "undefined" && !supabaseRef.current) {
+    supabaseRef.current = createSupabaseBrowserClient();
+  }
 
   useEffect(() => {
+    const supabase = supabaseRef.current;
+    if (!supabase) return;
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -43,10 +50,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase]);
+  }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    const supabase = supabaseRef.current;
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
   };
 
   return (
